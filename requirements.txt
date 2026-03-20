@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlmodel
+pyjwt
+pwdlib[argon2]
+pydantic-settings
+psycopg2
+pydantic[email]
