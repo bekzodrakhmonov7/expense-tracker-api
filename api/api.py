@@ -1,3 +1,5 @@
+from datetime import date
+
 from core.security import create_access_token, decode_access_token, hash_password
 from database.database import (
     SessionDep,
@@ -105,12 +107,22 @@ def create_expense(
 
 @router.get("/expenses", response_model=list[ExpensesPublic], tags=["Expenses"])
 def get_all_expenses(
-    session: SessionDep, credentials: HTTPAuthorizationCredentials = Depends(bearer)
+    session: SessionDep,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    credentials: HTTPAuthorizationCredentials = Depends(bearer),
 ):
+    if start_date and end_date:
+        if end_date < start_date:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="end date cannot be earlier than start date",
+            )
+
     token = credentials.credentials
     email = decode_access_token(token)
     db_user_id = get_user_by_email(email, session, Users.id)
-    expenses = get_all_expenses_user(db_user_id, session)
+    expenses = get_all_expenses_user(db_user_id, session, start_date, end_date)
     return expenses
 
 

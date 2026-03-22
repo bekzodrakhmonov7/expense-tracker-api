@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
 
@@ -67,3 +67,8 @@ class ExpensesPublic(SQLModel):
     description: str
     amount: float
     category_id: int
+
+
+class ExepenseFilter(BaseModel):
+    start_date: date | None
+    end_date: date | None

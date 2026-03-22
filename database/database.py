@@ -1,3 +1,4 @@
+from datetime import date, datetime, time
 from typing import Annotated
 
 from core.config import settings
@@ -71,8 +72,20 @@ def get_expense_by_id(id: int, session: SessionDep) -> schemas.Expenses:
     return db_expense
 
 
-def get_all_expenses_user(user_id: int, session: SessionDep):
+def get_all_expenses_user(
+    user_id: int,
+    session: SessionDep,
+    start_date: date | None = None,
+    end_date: date | None = None,
+):
     statement = select(schemas.Expenses).where(schemas.Expenses.user_id == user_id)
+    if start_date:
+        start = datetime.combine(start_date, time.min)
+        statement = statement.where(schemas.Expenses.created_at >= start)  # pyright: ignore[reportOptionalOperand]
+    if end_date:
+        end = datetime.combine(end_date, time.max)
+        statement = statement.where(schemas.Expenses.created_at < end)  # pyright: ignore[reportOptionalOperand]
+
     expenses = session.exec(statement).all()
     return expenses
 
