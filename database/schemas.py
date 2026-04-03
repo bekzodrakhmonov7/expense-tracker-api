@@ -67,6 +67,7 @@ class ExpensesPublic(SQLModel):
     description: str
     amount: float
     category_id: int
+    created_at: datetime | None = None
 
 
 class ExepenseFilter(BaseModel):

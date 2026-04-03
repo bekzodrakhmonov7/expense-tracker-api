@@ -54,6 +54,13 @@ def seed_categories() -> None:
         session.commit()
 
 
+def get_categories(session: SessionDep) -> list[schemas.Expense_Categories]:
+    statement = select(schemas.Expense_Categories).order_by(
+        schemas.Expense_Categories.id
+    )
+    return list(session.exec(statement).all())
+
+
 def get_user_by_email(email: str, session: SessionDep, expected_result):
     statement = select(expected_result).where(schemas.Users.email == email)
     db_user = session.exec(statement=statement).first()

@@ -1,14 +1,17 @@
 from datetime import date
+from pathlib import Path
 
 from core.security import create_access_token, decode_access_token, hash_password
 from database.database import (
     SessionDep,
     delete_expense_db,
     get_all_expenses_user,
+    get_categories,
     get_expense_by_id,
     get_user_by_email,
 )
 from database.schemas import (
+    Expense_Categories,
     Expenses,
     ExpensesBase,
     ExpensesPublic,
@@ -18,17 +21,29 @@ from database.schemas import (
     UsersPublic,
 )
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.exc import IntegrityError
 
 router = FastAPI()
 
 bearer = HTTPBearer()
+frontend_path = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+
+
+@router.get("/", include_in_schema=False)
+def get_frontend() -> FileResponse:
+    return FileResponse(frontend_path)
 
 
 @router.get("/health", tags=["Helath"])
 def get_health():
     return {"status": "Healthy"}
+
+
+@router.get("/categories", response_model=list[Expense_Categories], tags=["Expenses"])
+def get_expense_categories(session: SessionDep):
+    return get_categories(session)
 
 
 @router.post("/auth/register", tags=["Auth"])
@@ -81,7 +96,7 @@ def create_expense(
     email = decode_access_token(token)
     db_user_id = get_user_by_email(email, session, Users.id)
     db_expense = Expenses.model_validate(expense)
-    if db_expense.amount <= 0:
+    if db_expense.amount < 0:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Expense amount must be greater than 0",

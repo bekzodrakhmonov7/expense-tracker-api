@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ledger Flow</title>
+    <style>
+      :root {
+        --ink: #10233c;
+        --accent: #ff7a1a;
+        --surface: #fffaf4;
+        --surface-strong: #fff1e2;
+        --border: rgba(16, 35, 60, 0.12);
+        --text-soft: rgba(16, 35, 60, 0.68);
+        --shadow: 0 24px 60px rgba(16, 35, 60, 0.08);
+        --radius: 22px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(255, 122, 26, 0.18), transparent 30%),
+          linear-gradient(135deg, #fffdf9 0%, #fff6eb 100%);
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      .auth-shell {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 24px;
+      }
+
+      .panel {
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(12px);
+      }
+
+      .mini-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        color: var(--text-soft);
+      }
+
+      .mini-label::before {
+        content: "";
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        font-weight: 700;
+      }
+
+      .metric {
+        padding: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 1.4rem;
+        margin-top: 6px;
+      }
+
+      .auth {
+        width: min(100%, 460px);
+        padding: 28px;
+      }
+
+      .view-switch {
+        display: inline-grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 6px;
+        background: var(--surface);
+        border-radius: 999px;
+        border: 1px solid var(--border);
+      }
+
+      .ghost,
+      .primary,
+      .danger,
+      .view-button {
+        border: 0;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+      }
+
+      .view-button {
+        padding: 11px 16px;
+        background: transparent;
+        color: var(--ink);
+      }
+
+      .view-button.active {
+        background: var(--ink);
+        color: white;
+      }
+
+      .auth-form {
+        display: none;
+        margin-top: 22px;
+      }
+
+      .auth-form.active {
+        display: block;
+      }
+
+      .auth-header {
+        margin-bottom: 22px;
+      }
+
+      .auth-title {
+        font-size: clamp(2rem, 4vw, 2.8rem);
+        letter-spacing: -0.04em;
+      }
+
+      .auth-copy {
+        margin: 10px 0 0;
+        color: var(--text-soft);
+        line-height: 1.6;
+      }
+
+      .auth-switch {
+        margin-top: 18px;
+        color: var(--text-soft);
+        font-size: 0.94rem;
+      }
+
+      .auth-link {
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: var(--ink);
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 0.18em;
+      }
+
+      .grid,
+      .expense-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .grid.two,
+      .expense-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        color: var(--text-soft);
+        font-size: 0.92rem;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--ink);
+        outline: none;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: rgba(255, 122, 26, 0.55);
+        box-shadow: 0 0 0 4px rgba(255, 122, 26, 0.12);
+      }
+
+      .actions,
+      .topbar,
+      .expense-row,
+      .empty {
+        display: flex;
+        align-items: center;
+      }
+
+      .actions,
+      .topbar {
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .primary,
+      .ghost,
+      .danger {
+        padding: 13px 18px;
+      }
+
+      .primary {
+        background: var(--accent);
+        color: var(--ink);
+      }
+
+      .ghost {
+        background: var(--surface);
+        color: var(--ink);
+        border: 1px solid var(--border);
+      }
+
+      .danger {
+        background: rgba(255, 122, 26, 0.12);
+        color: var(--accent);
+      }
+
+      .primary:hover,
+      .ghost:hover,
+      .danger:hover,
+      .tab:hover,
+      .view-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .note,
+      .status,
+      .expense-meta,
+      .empty {
+        color: var(--text-soft);
+      }
+
+      .note,
+      .status {
+        font-size: 0.92rem;
+      }
+
+      .status {
+        min-height: 22px;
+        margin-top: 14px;
+      }
+
+      .status.error {
+        color: #c44f00;
+      }
+
+      .status.success {
+        color: var(--ink);
+      }
+
+      .dashboard {
+        display: none;
+        margin-top: 24px;
+        gap: 24px;
+      }
+
+      .dashboard.active {
+        display: grid;
+        grid-template-columns: 360px minmax(0, 1fr);
+      }
+
+      .stack {
+        display: grid;
+        gap: 24px;
+      }
+
+      .card {
+        padding: 24px;
+      }
+
+      .user-chip {
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        margin-top: 18px;
+      }
+
+      .mini-label {
+        margin-bottom: 10px;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .summary .metric {
+        background: white;
+      }
+
+      .filter-card {
+        margin-top: 18px;
+        padding: 18px;
+        border-radius: 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+      }
+
+      .filter-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .expenses {
+        display: grid;
+        gap: 14px;
+        margin-top: 22px;
+      }
+
+      .expense-row {
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+      }
+
+      .expense-title {
+        font-size: 1.08rem;
+      }
+
+      .expense-meta {
+        margin-top: 6px;
+        font-size: 0.92rem;
+      }
+
+      .expense-amount {
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+
+      .expense-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .text-button {
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+        padding: 4px;
+      }
+
+      .empty {
+        justify-content: center;
+        min-height: 200px;
+        border: 1px dashed var(--border);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.55);
+      }
+
+      @media (max-width: 920px) {
+        .dashboard.active,
+        .grid.two,
+        .expense-grid,
+        .summary {
+          grid-template-columns: 1fr;
+        }
+
+        .page {
+          width: min(100% - 20px, 720px);
+          padding-top: 20px;
+        }
+
+        .intro,
+        .auth,
+        .card {
+          padding: 20px;
+        }
+
+        .actions,
+        .topbar,
+        .expense-row {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="auth-shell">
+        <aside class="panel auth">
+          <form class="auth-form active" id="register-form" novalidate>
+            <div class="auth-header">
+              <span class="mini-label">Create account</span>
+              <h1 class="auth-title">Register</h1>
+              <p class="auth-copy">Create your account to start adding expenses.</p>
+            </div>
+            <div class="grid">
+              <label>
+                Username
+                <input id="register-username" type="text" placeholder="jane" />
+              </label>
+              <label>
+                Email
+                <input id="register-email" type="text" placeholder="jane@example.com" />
+              </label>
+              <label>
+                Password
+                <input id="register-password" type="password" placeholder="At least 8 characters" />
+              </label>
+            </div>
+            <div class="actions" style="margin-top: 18px;">
+              <span class="note">Creates an account and signs you in.</span>
+              <button class="primary" type="submit">Create account</button>
+            </div>
+            <div class="status" id="register-status"></div>
+            <div class="auth-switch">
+              Already have an account?
+              <button class="auth-link" data-auth-view="login" type="button">Go to login</button>
+            </div>
+          </form>
+
+          <form class="auth-form" id="login-form" novalidate>
+            <div class="auth-header">
+              <span class="mini-label">Welcome back</span>
+              <h1 class="auth-title">Login</h1>
+              <p class="auth-copy">Sign in with your existing account.</p>
+            </div>
+            <div class="grid">
+              <label>
+                Email
+                <input id="login-email" type="text" placeholder="jane@example.com" />
+              </label>
+              <label>
+                Password
+                <input id="login-password" type="password" placeholder="Your password" />
+              </label>
+            </div>
+            <div class="actions" style="margin-top: 18px;">
+              <span class="note">Uses your existing API account.</span>
+              <button class="primary" type="submit">Sign in</button>
+            </div>
+            <div class="status" id="login-status"></div>
+            <div class="auth-switch">
+              Need a new account?
+              <button class="auth-link" data-auth-view="register" type="button">Go to register</button>
+            </div>
+          </form>
+        </aside>
+      </section>
+
+      <section class="dashboard" id="dashboard">
+        <div class="stack">
+          <article class="panel card">
+            <div class="topbar">
+              <div>
+                <span class="mini-label">Session</span>
+                <h2 id="welcome-title">Welcome back</h2>
+              </div>
+              <button class="ghost" id="logout-button" type="button">Logout</button>
+            </div>
+            <div class="user-chip" id="user-chip">Signed out</div>
+            <div class="summary">
+              <div class="metric">
+                <span class="note">Entries</span>
+                <strong id="summary-count">0</strong>
+              </div>
+              <div class="metric">
+                <span class="note">Total</span>
+                <strong id="summary-total">$0.00</strong>
+              </div>
+              <div class="metric">
+                <span class="note">Latest</span>
+                <strong id="summary-latest">-</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel card">
+            <div class="topbar">
+              <div>
+                <span class="mini-label">Expense form</span>
+                <h2 id="form-title">Add expense</h2>
+              </div>
+              <button class="ghost" id="reset-expense-form" type="button">Clear</button>
+            </div>
+            <form id="expense-form" style="margin-top: 18px;" novalidate>
+              <input id="expense-id" type="hidden" />
+              <div class="grid">
+                <label>
+                  Description
+                  <input id="expense-description" type="text" placeholder="Weekly groceries" />
+                </label>
+              </div>
+              <div class="expense-grid" style="margin-top: 14px;">
+                <label>
+                  Amount
+                  <input id="expense-amount" type="number" placeholder="0.00" />
+                </label>
+                <label>
+                  Category
+                  <select id="expense-category"></select>
+                </label>
+              </div>
+              <div class="actions" style="margin-top: 18px;">
+                <span class="note">Save a new item or update the selected one.</span>
+                <button class="primary" id="submit-expense" type="submit">Save expense</button>
+              </div>
+              <div class="status" id="expense-status"></div>
+            </form>
+          </article>
+        </div>
+
+        <article class="panel card">
+          <div class="topbar">
+            <div>
+              <span class="mini-label">Expense list</span>
+              <h2>Your entries</h2>
+            </div>
+            <div class="view-switch">
+              <button class="view-button active" data-sort="latest" type="button">Latest</button>
+              <button class="view-button" data-sort="highest" type="button">Highest</button>
+            </div>
+          </div>
+          <div class="filter-card">
+            <span class="mini-label">Filter list</span>
+            <div class="expense-grid" style="margin-top: 14px;">
+              <label>
+                Start date
+                <input id="filter-start" type="date" />
+              </label>
+              <label>
+                End date
+                <input id="filter-end" type="date" />
+              </label>
+            </div>
+            <div class="filter-actions">
+              <span class="note">Refine the entries shown below.</span>
+              <button class="ghost" id="apply-filter" type="button">Apply filter</button>
+            </div>
+          </div>
+          <div class="expenses" id="expenses-list">
+            <div class="empty">Sign in to load your expenses.</div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const state = {
+        token: localStorage.getItem("expense-tracker-token") || "",
+        user: null,
+        categories: [],
+        expenses: [],
+        sort: "latest",
+      };
+
+      const authTabs = document.querySelectorAll("[data-auth-view]");
+      const authForms = {
+        register: document.getElementById("register-form"),
+        login: document.getElementById("login-form"),
+      };
+      const authShell = document.querySelector(".auth-shell");
+      const dashboard = document.getElementById("dashboard");
+      const expensesList = document.getElementById("expenses-list");
+      const expenseCategory = document.getElementById("expense-category");
+
+      function setStatus(id, message, tone = "") {
+        const element = document.getElementById(id);
+        element.textContent = message;
+        element.className = tone ? `status ${tone}` : "status";
+      }
+
+      function setAuthView(view) {
+        authTabs.forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.authView === view);
+        });
+
+        Object.entries(authForms).forEach(([name, form]) => {
+          form.classList.toggle("active", name === view);
+        });
+      }
+
+      async function request(path, options = {}) {
+        const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+        if (state.token) {
+          headers.Authorization = `Bearer ${state.token}`;
+        }
+
+        const response = await fetch(path, { ...options, headers });
+        const isJson = response.headers.get("content-type")?.includes("application/json");
+        const payload = isJson ? await response.json() : null;
+
+        if (!response.ok) {
+          const detail = payload?.detail;
+          throw new Error(Array.isArray(detail) ? detail.map((item) => item.msg).join(", ") : detail || "Request failed");
+        }
+
+        return payload;
+      }
+
+      function currency(value) {
+        return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value || 0);
+      }
+
+      function formatDate(value) {
+        if (!value) {
+          return "-";
+        }
+
+        return new Date(value).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function renderCategories() {
+        expenseCategory.innerHTML = "";
+        state.categories.forEach((category) => {
+          const option = document.createElement("option");
+          option.value = category.id;
+          option.textContent = category.name;
+          expenseCategory.appendChild(option);
+        });
+      }
+
+      function renderSummary() {
+        const total = state.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const latest = state.expenses[0];
+
+        document.getElementById("summary-count").textContent = String(state.expenses.length);
+        document.getElementById("summary-total").textContent = currency(total);
+        document.getElementById("summary-latest").textContent = latest ? currency(latest.amount) : "-";
+      }
+
+      function currentExpenses() {
+        const items = [...state.expenses];
+        if (state.sort === "highest") {
+          items.sort((left, right) => right.amount - left.amount);
+        }
+        return items;
+      }
+
+      function categoryName(categoryId) {
+        return state.categories.find((category) => category.id === categoryId)?.name || `Category ${categoryId}`;
+      }
+
+      function renderExpenses() {
+        const items = currentExpenses();
+        if (!items.length) {
+          expensesList.innerHTML = '<div class="empty">No expenses yet. Add your first one.</div>';
+          renderSummary();
+          return;
+        }
+
+        expensesList.innerHTML = items
+          .map(
+            (expense) => `
+              <article class="expense-row">
+                <div>
+                  <div class="expense-title">${expense.description}</div>
+                  <div class="expense-meta">${categoryName(expense.category_id)} · ${formatDate(expense.created_at)}</div>
+                </div>
+                <div>
+                  <div class="expense-amount">${currency(expense.amount)}</div>
+                  <div class="expense-actions">
+                    <button class="text-button" data-action="edit" data-id="${expense.id}" type="button">Edit</button>
+                    <button class="text-button" data-action="delete" data-id="${expense.id}" type="button">Delete</button>
+                  </div>
+                </div>
+              </article>
+            `
+          )
+          .join("");
+
+        renderSummary();
+      }
+
+      function resetExpenseForm() {
+        document.getElementById("expense-form").reset();
+        document.getElementById("expense-id").value = "";
+        document.getElementById("form-title").textContent = "Add expense";
+        document.getElementById("submit-expense").textContent = "Save expense";
+        if (state.categories[0]) {
+          expenseCategory.value = String(state.categories[0].id);
+        }
+      }
+
+      function showDashboard() {
+        authShell.style.display = state.token ? "none" : "flex";
+        dashboard.classList.toggle("active", Boolean(state.token));
+      }
+
+      async function loadCategories() {
+        state.categories = await request("/categories", { method: "GET" });
+        renderCategories();
+      }
+
+      async function loadUser() {
+        state.user = await request("/auth/me", { method: "GET" });
+        document.getElementById("welcome-title").textContent = `Hello, ${state.user.username}`;
+        document.getElementById("user-chip").textContent = state.user.email;
+      }
+
+      async function loadExpenses() {
+        const params = new URLSearchParams();
+        const startDate = document.getElementById("filter-start").value;
+        const endDate = document.getElementById("filter-end").value;
+        if (startDate) params.set("start_date", startDate);
+        if (endDate) params.set("end_date", endDate);
+        const query = params.toString() ? `?${params.toString()}` : "";
+        state.expenses = await request(`/expenses${query}`, { method: "GET" });
+        state.expenses.sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0));
+        renderExpenses();
+      }
+
+      async function bootstrapDashboard() {
+        if (!state.token) {
+          showDashboard();
+          return;
+        }
+
+        try {
+          await loadCategories();
+          await loadUser();
+          await loadExpenses();
+          resetExpenseForm();
+          showDashboard();
+        } catch (error) {
+          localStorage.removeItem("expense-tracker-token");
+          state.token = "";
+          showDashboard();
+          setStatus("login-status", error.message, "error");
+        }
+      }
+
+      authTabs.forEach((tab) => {
+        tab.addEventListener("click", () => setAuthView(tab.dataset.authView));
+      });
+
+      document.getElementById("register-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setStatus("register-status", "Working...");
+        try {
+          const payload = await request("/auth/register", {
+            method: "POST",
+            body: JSON.stringify({
+              username: document.getElementById("register-username").value,
+              email: document.getElementById("register-email").value,
+              password: document.getElementById("register-password").value,
+            }),
+          });
+          state.token = payload.access_token;
+          localStorage.setItem("expense-tracker-token", state.token);
+          setStatus("register-status", "Account ready.", "success");
+          await bootstrapDashboard();
+        } catch (error) {
+          setStatus("register-status", error.message, "error");
+        }
+      });
+
+      document.getElementById("login-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setStatus("login-status", "Working...");
+        try {
+          const payload = await request("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({
+              email: document.getElementById("login-email").value,
+              password: document.getElementById("login-password").value,
+            }),
+          });
+          state.token = payload.access_token;
+          localStorage.setItem("expense-tracker-token", state.token);
+          setStatus("login-status", "Signed in.", "success");
+          await bootstrapDashboard();
+        } catch (error) {
+          setStatus("login-status", error.message, "error");
+        }
+      });
+
+      document.getElementById("expense-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setStatus("expense-status", "Saving...");
+        const expenseId = document.getElementById("expense-id").value;
+        const body = {
+          description: document.getElementById("expense-description").value,
+          amount: Number(document.getElementById("expense-amount").value),
+          category_id: Number(document.getElementById("expense-category").value),
+        };
+
+        try {
+          await request(expenseId ? `/expenses/${expenseId}` : "/expenses", {
+            method: expenseId ? "PUT" : "POST",
+            body: JSON.stringify(body),
+          });
+          setStatus("expense-status", expenseId ? "Expense updated." : "Expense added.", "success");
+          resetExpenseForm();
+          await loadExpenses();
+        } catch (error) {
+          setStatus("expense-status", error.message, "error");
+        }
+      });
+
+      document.getElementById("apply-filter").addEventListener("click", async () => {
+        setStatus("expense-status", "Filtering...");
+        try {
+          await loadExpenses();
+          setStatus("expense-status", "List updated.", "success");
+        } catch (error) {
+          setStatus("expense-status", error.message, "error");
+        }
+      });
+
+      document.getElementById("reset-expense-form").addEventListener("click", () => {
+        resetExpenseForm();
+        setStatus("expense-status", "");
+      });
+
+      document.getElementById("logout-button").addEventListener("click", () => {
+        state.token = "";
+        state.user = null;
+        state.expenses = [];
+        localStorage.removeItem("expense-tracker-token");
+        document.getElementById("user-chip").textContent = "Signed out";
+        expensesList.innerHTML = '<div class="empty">Sign in to load your expenses.</div>';
+        setAuthView("register");
+        showDashboard();
+      });
+
+      expensesList.addEventListener("click", async (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+
+        const expenseId = Number(button.dataset.id);
+        const selectedExpense = state.expenses.find((expense) => expense.id === expenseId);
+        if (!selectedExpense) {
+          return;
+        }
+
+        if (button.dataset.action === "edit") {
+          document.getElementById("expense-id").value = String(selectedExpense.id);
+          document.getElementById("expense-description").value = selectedExpense.description;
+          document.getElementById("expense-amount").value = selectedExpense.amount;
+          document.getElementById("expense-category").value = String(selectedExpense.category_id);
+          document.getElementById("form-title").textContent = "Edit expense";
+          document.getElementById("submit-expense").textContent = "Update expense";
+          setStatus("expense-status", "Editing selected expense.", "success");
+          return;
+        }
+
+        try {
+          await request(`/expenses/${expenseId}`, { method: "DELETE" });
+          setStatus("expense-status", "Expense deleted.", "success");
+          await loadExpenses();
+        } catch (error) {
+          setStatus("expense-status", error.message, "error");
+        }
+      });
+
+      document.querySelectorAll("[data-sort]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.sort = button.dataset.sort;
+          document.querySelectorAll("[data-sort]").forEach((item) => {
+            item.classList.toggle("active", item === button);
+          });
+          renderExpenses();
+        });
+      });
+
+      bootstrapDashboard();
+    </script>
+  </body>
+</html>
