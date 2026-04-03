@@ -4,5 +4,5 @@ sqlmodel
 pyjwt
 pwdlib[argon2]
 pydantic-settings
-psycopg2
+psycopg2-binary
 pydantic[email]

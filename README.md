@@ -45,6 +45,8 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+This project uses `psycopg2-binary` so you do not need a separate local `libpq` installation just to run the app.
+
 ### 4. Configure environment variables
 
 Create a `.env` file in the project root with the following variables:
